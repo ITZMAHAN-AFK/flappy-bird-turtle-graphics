@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flappy Bird</title>
+<style>
+  canvas { background: lightblue; display: block; margin: 0 auto; }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="600" height="600"></canvas>
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let bird = { x: 100, y: 300, radius: 15, velocity: 0 };
+let gravity = 0.5;
+let flapPower = -10;
+let pipes = [];
+let pipeSpeed = 3;
+let pipeGap = 150;
+let score = 0;
+let gameStarted = false;
+let startTextVisible = true;
+
+// Handle flap
+document.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+        bird.velocity = flapPower;
+        if (!gameStarted) {
+            gameStarted = true;
+            startTextVisible = false;
+            spawnPipe();
+        }
+    }
+});
+
+// Spawn a new pipe
+function spawnPipe() {
+    let topHeight = Math.floor(Math.random() * 200 + 100);
+    pipes.push({
+        x: 600,
+        topHeight: topHeight,
+        bottomY: topHeight + pipeGap
+    });
+}
+
+// Game loop
+function update() {
+    if (gameStarted) {
+        // Gravity
+        bird.velocity += gravity;
+        bird.y += bird.velocity;
+
+        // Move pipes
+        for (let i = 0; i < pipes.length; i++) {
+            pipes[i].x -= pipeSpeed;
+
+            // Score
+            if (pipes[i].x + 50 === bird.x) score++;
+
+            // Collision
+            if (bird.x + bird.radius > pipes[i].x && bird.x - bird.radius < pipes[i].x + 50) {
+                if (bird.y - bird.radius < pipes[i].topHeight || bird.y + bird.radius > pipes[i].bottomY) {
+                    alert("Game Over! Score: " + score);
+                    document.location.reload();
+                }
+            }
+        }
+
+        // Remove offscreen pipes
+        pipes = pipes.filter(p => p.x + 50 > 0);
+
+        // Spawn new pipe
+        if (pipes.length === 0 || pipes[pipes.length-1].x < 300) spawnPipe();
+
+        // Ground / ceiling
+        if (bird.y + bird.radius > canvas.height || bird.y - bird.radius < 0) {
+            alert("Game Over! Score: " + score);
+            document.location.reload();
+        }
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+// Draw everything
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Static text
+    ctx.fillStyle = "black";
+    ctx.font = "27px Arial";
+    ctx.fillText("MADE BY MAHAN", 150, 50);
+
+    if (startTextVisible) {
+        ctx.font = "20px Arial";
+        ctx.fillText("PRESS SPACE TO START", 180, 100);
+    }
+
+    // Score
+    ctx.font = "24px Arial";
+    ctx.fillText("Score: " + score, 250, 150);
+
+    // Bird
+    ctx.fillStyle = "yellow";
+    ctx.beginPath();
+    ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI*2);
+    ctx.fill();
+
+    // Pipes
+    ctx.fillStyle = "green";
+    for (let pipe of pipes) {
+        ctx.fillRect(pipe.x, 0, 50, pipe.topHeight);
+        ctx.fillRect(pipe.x, pipe.bottomY, 50, canvas.height - pipe.bottomY);
+    }
+}
+
+update();
+</script>
+</body>
+</html>
